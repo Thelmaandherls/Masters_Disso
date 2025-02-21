@@ -54,19 +54,90 @@ Validation set - This part of the dataset will be used to evalute the traing mod
 Test set - This part of the dataset is used to final check the model predictions on the new unseen data to evaluate how well the model is performing.
 '''
 
+batch_size = 128
+train_loader = DataLoader(train_data, batch_size, shuffle = True)
+val_loader = DataLoader(validation_data, batch_size, shuffle = False)
+
+
+"""
+Logistic Regression model is identical to a linear regression model i.e, there are weights and bias matrices, and the output is obtained using simple matrix operations(pred = x@ w.t() + b).
+
+We can use nn.Linear to create the model instead of defining and initializing the matrices manually.
+
+Since nn.Linear expects the each training example to a vector, each 1 X 28 X 28 image tensor needs to be flattened out into a vector of size 784(28 X 28), before being passed into the model.
+
+The output for each image is vector of size 10, with each element of the vector signifying the probability a particular target label(i.e 0 to 9). The predicted label for an image is simply the one with the highest probability.
+
+"""
+import torch.nn as nn
+input_size = 28 * 28
+num_classes = 10
+
+## Logistic regression model
+model = nn.Linear(input_size, num_classes)
+print(model.weight.shape)
+print(model.weight)
+print(model.bias.shape)
+print(model.bias)
+print("-------------------------------")
+
+## The model is simply a linear transformation of the input, and does not take into account the non-linear relationships that may exist within the data
+## The output of the model is not a probability distribution over the 10 classes, to convert the output into probabilities, we use the softmax function, which has the following formula:
+'''
+for images, labels in train_loader:
+    print(labels)
+    print(images.shape)
+    outputs = model(images)
+    break
+    '''
+
+"""
+Note This leads to an error, because our input data does not have the right shape. Our images are of the shape 1X28X28, but we need them to be vectors of size 784 i.e we need to flatten them out. We will use the .reshape() method of a tensor, which will allow us to efficiently view each image as a flat vector, without really changing the underlying data.
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (3584x28 and 784x10)
+
+To include this additional functionality within model, we need to define a custom model, by extending the nn.Module class from PyTorch"""
 print("-------------------------------")
 
 
+class MnistModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(input_size, num_classes)
+        
+    def forward(self, xb):
+        xb = xb.reshape(-1, 784)
+        print(xb)
+        out = self.linear(xb)
+        print(out)
+        return(out)
+
+model = MnistModel()
+print(model.linear.weight.shape, model.linear.bias.shape)
+list(model.parameters())
 print("-------------------------------")
 
 
+for images, labels in train_loader:
+    outputs = model(images)
+    break
+    
+print('outputs shape: ', outputs.shape)
+print('Sample outputs: \n', outputs[:2].data)
 print("-------------------------------")
 
+## Apply softmax for each output row
+probs = F.softmax(outputs, dim = 1)
 
+## chaecking at sample probabilities
+print("Sample probabilities:\n", probs[:2].data)
+
+print("\n")
+## Add up the probabilities of an output row
+print("Sum: ", torch.sum(probs[0]).item())
+max_probs, preds = torch.max(probs, dim = 1)
+print("\n")
+print(preds)
+print("\n")
+print(max_probs)
 print("-------------------------------")
-
-
-print("-------------------------------")
-
-
-
+print(labels)
